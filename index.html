@@ -70,80 +70,92 @@
   </div>
 
   <script>
-    // Base de preguntas (ampliable)
-    const banco = {
-      'Geografía': [
-        { q: "¿Cuál es la capital de Australia?", a: "Canberra" },
-        { q: "¿Qué río atraviesa París?", a: "El Sena" }
-      ],
-      'Espectáculos': [
-        { q: "¿Quién dirigió la película 'El Padrino'?", a: "Francis Ford Coppola" }
-      ],
-      'Historia': [
-        { q: "¿En qué año cayó el Muro de Berlín?", a: "1989" }
-      ],
-      'Arte y Lit.': [
-        { q: "¿Quién pintó 'El Guernica'?", a: "Pablo Picasso" }
-      ],
-      'Ciencias': [
-        { q: "¿Cuál es el elemento químico con símbolo 'Fe'?", a: "Hierro" }
-      ],
-      'Deportes': [
-        { q: "¿Cuántos jugadores forman un equipo de voleibol en pista?", a: "6 jugadores" }
-      ]
-    };
+  let banco = {};
+  let preguntasUsadas = {};
+  let timerInterval = null;
+  let timeLeft = 45;
 
-    let timerInterval = null;
-    let timeLeft = 45;
-
-    function sacarPregunta(cat, color) {
-      const lista = banco[cat] || [];
-      if (lista.length === 0) return;
-      const item = lista[Math.floor(Math.random() * lista.length)];
-
-      document.getElementById('catLabel').innerText = cat;
-      document.getElementById('catLabel').style.color = color;
-      document.getElementById('cardBox').style.borderColor = color;
-      document.getElementById('qLabel').innerText = item.q;
-      document.getElementById('aLabel').innerText = item.a;
-      document.getElementById('aLabel').style.display = 'none';
-      document.getElementById('btnReveal').style.display = 'block';
-
-      reiniciarTimer();
-    }
-
-    function mostrarRespuesta() {
-      document.getElementById('btnReveal').style.display = 'none';
-      document.getElementById('aLabel').style.display = 'block';
-    }
-
-    function reiniciarTimer() {
-      clearInterval(timerInterval);
-      timeLeft = 45;
-      document.getElementById('timerFill').style.width = '100%';
-      document.getElementById('timerBtn').innerText = '⏱ Iniciar 45s';
-      timerInterval = null;
-    }
-
-    function toggleTimer() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        document.getElementById('timerBtn').innerText = '⏱ Reanudar';
-      } else {
-        document.getElementById('timerBtn').innerText = '⏸ Pausar';
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          const pct = Math.max(0, (timeLeft / 45) * 100);
-          document.getElementById('timerFill').style.width = pct + '%';
-          if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            document.getElementById('timerBtn').innerText = '⏰ Tiempo';
-          }
-        }, 1000);
+  // Carga el archivo JSON automáticamente al abrir la app
+  fetch('preguntas.json')
+    .then(response => response.json())
+    .then(data => {
+      banco = data;
+      // Inicializar registro de usadas por categoría
+      for (const cat in banco) {
+        preguntasUsadas[cat] = [];
       }
+      document.getElementById('qLabel').innerText = 'Base de preguntas cargada. Elige una categoría.';
+    })
+    .catch(err => {
+      document.getElementById('qLabel').innerText = 'Error al cargar preguntas.json';
+    });
+
+  function sacarPregunta(cat, color) {
+    const lista = banco[cat] || [];
+    if (lista.length === 0) {
+      document.getElementById('qLabel').innerText = 'No hay preguntas disponibles en esta categoría.';
+      return;
     }
-  </script>
+
+    // Filtrar las que aún no han salido
+    let disponibles = lista.filter((_, idx) => !preguntasUsadas[cat].includes(idx));
+    
+    // Si se agotan, se reinicia la lista de esa categoría
+    if (disponibles.length === 0) {
+      preguntasUsadas[cat] = [];
+      disponibles = lista;
+    }
+
+    const indiceElegido = Math.floor(Math.random() * disponibles.length);
+    const item = disponibles[indiceElegido];
+    const indiceOriginal = lista.indexOf(item);
+    preguntasUsadas[cat].push(indiceOriginal);
+
+    // Actualizar pantalla
+    document.getElementById('catLabel').innerText = cat;
+    document.getElementById('catLabel').style.color = color;
+    document.getElementById('cardBox').style.borderColor = color;
+    document.getElementById('qLabel').innerText = item.q;
+    document.getElementById('aLabel').innerText = item.a;
+    document.getElementById('aLabel').style.display = 'none';
+    document.getElementById('btnReveal').style.display = 'block';
+
+    reiniciarTimer();
+  }
+
+  function mostrarRespuesta() {
+    document.getElementById('btnReveal').style.display = 'none';
+    document.getElementById('aLabel').style.display = 'block';
+  }
+
+  function reiniciarTimer() {
+    clearInterval(timerInterval);
+    timeLeft = 45;
+    document.getElementById('timerFill').style.width = '100%';
+    document.getElementById('timerBtn').innerText = '⏱ Iniciar 45s';
+    timerInterval = null;
+  }
+
+  function toggleTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('timerBtn').innerText = '⏱ Reanudar';
+    } else {
+      document.getElementById('timerBtn').innerText = '⏸ Pausar';
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const pct = Math.max(0, (timeLeft / 45) * 100);
+        document.getElementById('timerFill').style.width = pct + '%';
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          document.getElementById('timerBtn').innerText = '⏰ Tiempo';
+        }
+      }, 1000);
+    }
+  }
+</script>
+
 </body>
 </html>
