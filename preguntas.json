@@ -206,7 +206,7 @@
     { "q": "¿Cuál es la capital de Australia?", "a": "Canberra" }
   ],
   "Espectáculos": [
-    [
+    
   { "q": "¿Quién dirigió la obra maestra cinematográfica 'El Padrino' (1972)?", "a": "Francis Ford Coppola" },
   { "q": "¿Qué mítico festival internacional de cine se celebra cada mes de septiembre en el Kursaal y el Teatro Victoria Eugenia?", "a": "Festival Internacional de Cine de San Sebastián (Zinemaldia)" },
   { "q": "¿Qué legendaria banda de rock británica compuso la ópera rock 'Bohemian Rhapsody'?", "a": "Queen" },
