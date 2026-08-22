@@ -684,21 +684,43 @@
   }
   </script>
 
-  <script>
+    <script>
     let banco = {};
-    let preguntasUsadas = {};
+    let mazos = {}; // Contendrá las preguntas barajadas por categoría
     let timerInterval = null;
     let timeLeft = 45;
 
-    // Carga directa desde la etiqueta interna del documento
+    // Cargar preguntas desde la etiqueta interna
     try {
       const dataText = document.getElementById('preguntas-data').textContent;
       banco = JSON.parse(dataText);
+      // Inicializar y barajar todos los mazos al arrancar
       for (const cat in banco) {
-        preguntasUsadas[cat] = [];
+        prepararMazo(cat);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error al cargar datos:", e);
+    }
+
+    // Algoritmo de barajado real (Fisher-Yates)
+    function barajar(array) {
+      let m = array.length, t, i;
+      while (m) {
+        i = Math.floor(Math.random() * m--);
+        t = array[m];
+        array[m] = array[i];
+        array[i] = t;
+      }
+      return array;
+    }
+
+    function prepararMazo(cat) {
+      if (banco[cat] && banco[cat].length > 0) {
+        // Hacemos una copia independiente y la barajamos por completo
+        mazos[cat] = barajar([...banco[cat]]);
+      } else {
+        mazos[cat] = [];
+      }
     }
 
     function normalizarClave(cat) {
@@ -715,9 +737,15 @@
 
     function sacarPregunta(categoriaOriginal, color) {
       const cat = normalizarClave(categoriaOriginal);
-      const lista = banco[cat] || [];
 
-      if (!lista || lista.length === 0) {
+      // Si el mazo no existe o ya se han agotado todas las cartas, se vuelve a barajar
+      if (!mazos[cat] || mazos[cat].length === 0) {
+        prepararMazo(cat);
+      }
+
+      const mazoActual = mazos[cat];
+
+      if (!mazoActual || mazoActual.length === 0) {
         document.getElementById('catLabel').innerText = categoriaOriginal;
         document.getElementById('catLabel').style.color = color;
         document.getElementById('cardBox').style.borderColor = color;
@@ -727,16 +755,8 @@
         return;
       }
 
-      if (!preguntasUsadas[cat]) preguntasUsadas[cat] = [];
-
-      let disponibles = lista.filter((_, idx) => !preguntasUsadas[cat].includes(idx));
-      if (disponibles.length === 0) {
-        preguntasUsadas[cat] = [];
-        disponibles = lista;
-      }
-
-      const item = disponibles[Math.floor(Math.random() * disponibles.length)];
-      preguntasUsadas[cat].push(lista.indexOf(item));
+      // Sacar la siguiente carta del mazo (garantiza aleatoriedad y cero repeticiones)
+      const item = mazoActual.pop();
 
       document.getElementById('catLabel').innerText = categoriaOriginal;
       document.getElementById('catLabel').style.color = color;
@@ -782,5 +802,6 @@
       }
     }
   </script>
+
 </body>
 </html>
