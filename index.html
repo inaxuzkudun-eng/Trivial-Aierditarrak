@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Trivial Companion</title>
+  <style>
+    :root {
+      --geo: #0077b6;      /* Azul */
+      --esp: #e63946;      /* Rosa/Rojo */
+      --hist: #f4a261;     /* Amarillo/Ocre */
+      --arte: #7209b7;     /* Púrpura/Marrón */
+      --cie: #2a9d8f;      /* Verde */
+      --dep: #f77f00;      /* Naranja */
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; display: flex; flex-direction: column; height: 100vh; }
+    
+    .timer-bar { height: 6px; background: #333; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+    .timer-fill { height: 100%; width: 100%; background: #00e676; transition: width 1s linear; }
+
+    .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .cat-btn { border: none; padding: 12px 4px; border-radius: 8px; color: white; font-weight: bold; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; }
+    .cat-geo { background: var(--geo); }
+    .cat-esp { background: var(--esp); }
+    .cat-hist { background: var(--hist); color: #000; }
+    .cat-arte { background: var(--arte); }
+    .cat-cie { background: var(--cie); }
+    .cat-dep { background: var(--dep); }
+
+    .card { background: var(--card-bg); border-radius: 16px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center; border: 2px solid #333; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .card-category { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 1px; }
+    .question { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin-bottom: 24px; }
+    .answer-box { min-height: 48px; display: flex; align-items: center; justify-content: center; width: 100%; }
+    .reveal-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; }
+    .answer { font-size: 1.15rem; color: #00e676; font-weight: 700; display: none; }
+
+    .controls { margin-top: 16px; display: flex; gap: 8px; }
+    .btn-action { flex: 1; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; background: #333; color: white; }
+    .btn-timer { background: #222; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+
+  <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+
+  <div class="category-grid">
+    <button class="cat-btn cat-geo" onclick="sacarPregunta('Geografía', '#0077b6')">Geografía</button>
+    <button class="cat-btn cat-esp" onclick="sacarPregunta('Espectáculos', '#e63946')">Espectáculos</button>
+    <button class="cat-btn cat-hist" onclick="sacarPregunta('Historia', '#f4a261')">Historia</button>
+    <button class="cat-btn cat-arte" onclick="sacarPregunta('Arte y Lit.', '#7209b7')">Arte/Lit.</button>
+    <button class="cat-btn cat-cie" onclick="sacarPregunta('Ciencias', '#2a9d8f')">Ciencia</button>
+    <button class="cat-btn cat-dep" onclick="sacarPregunta('Deportes', '#f77f00')">Deportes</button>
+  </div>
+
+  <div class="card" id="cardBox">
+    <div class="card-category" id="catLabel">Elige una categoría</div>
+    <div class="question" id="qLabel">Toca un botón superior para sacar una tarjeta</div>
+    <div class="answer-box">
+      <button class="reveal-btn" id="btnReveal" style="display:none;" onclick="mostrarRespuesta()">Ver Respuesta</button>
+      <div class="answer" id="aLabel"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-action btn-timer" id="timerBtn" onclick="toggleTimer()">⏱ Iniciar 45s</button>
+  </div>
+
+  <script>
+    // Base de preguntas (ampliable)
+    const banco = {
+      'Geografía': [
+        { q: "¿Cuál es la capital de Australia?", a: "Canberra" },
+        { q: "¿Qué río atraviesa París?", a: "El Sena" }
+      ],
+      'Espectáculos': [
+        { q: "¿Quién dirigió la película 'El Padrino'?", a: "Francis Ford Coppola" }
+      ],
+      'Historia': [
+        { q: "¿En qué año cayó el Muro de Berlín?", a: "1989" }
+      ],
+      'Arte y Lit.': [
+        { q: "¿Quién pintó 'El Guernica'?", a: "Pablo Picasso" }
+      ],
+      'Ciencias': [
+        { q: "¿Cuál es el elemento químico con símbolo 'Fe'?", a: "Hierro" }
+      ],
+      'Deportes': [
+        { q: "¿Cuántos jugadores forman un equipo de voleibol en pista?", a: "6 jugadores" }
+      ]
+    };
+
+    let timerInterval = null;
+    let timeLeft = 45;
+
+    function sacarPregunta(cat, color) {
+      const lista = banco[cat] || [];
+      if (lista.length === 0) return;
+      const item = lista[Math.floor(Math.random() * lista.length)];
+
+      document.getElementById('catLabel').innerText = cat;
+      document.getElementById('catLabel').style.color = color;
+      document.getElementById('cardBox').style.borderColor = color;
+      document.getElementById('qLabel').innerText = item.q;
+      document.getElementById('aLabel').innerText = item.a;
+      document.getElementById('aLabel').style.display = 'none';
+      document.getElementById('btnReveal').style.display = 'block';
+
+      reiniciarTimer();
+    }
+
+    function mostrarRespuesta() {
+      document.getElementById('btnReveal').style.display = 'none';
+      document.getElementById('aLabel').style.display = 'block';
+    }
+
+    function reiniciarTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 45;
+      document.getElementById('timerFill').style.width = '100%';
+      document.getElementById('timerBtn').innerText = '⏱ Iniciar 45s';
+      timerInterval = null;
+    }
+
+    function toggleTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        document.getElementById('timerBtn').innerText = '⏱ Reanudar';
+      } else {
+        document.getElementById('timerBtn').innerText = '⏸ Pausar';
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const pct = Math.max(0, (timeLeft / 45) * 100);
+          document.getElementById('timerFill').style.width = pct + '%';
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            document.getElementById('timerBtn').innerText = '⏰ Tiempo';
+          }
+        }, 1000);
+      }
+    }
+  </script>
+</body>
+</html>
